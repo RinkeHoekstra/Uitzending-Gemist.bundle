@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from PMS import *
 import re, time
 from string import ascii_uppercase
 
@@ -52,15 +51,15 @@ def Start():
   MediaContainer.userAgent = ''
 
   # Set HTTP headers
-  HTTP.SetCacheTime(1800)
-  HTTP.SetHeader('User-agent', 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100824 Firefox/3.6.9')
+  HTTP.CacheTime = 1800
+  HTTP.Headers['User-agent'] = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.10) Gecko/20100914 Firefox/3.6.10'
 
 ###################################################################################################
 
 def MainMenu():
+  dir = MediaContainer(viewGroup='_List', noCache=True)
   EnsureSessionIsAlive()
 
-  dir = MediaContainer(viewGroup='_List')
   dir.Append(Function(DirectoryItem(Recent, title='Recente uitzendingen', thumb=R(PLUGIN_ICON_DEFAULT))))
   dir.Append(Function(DirectoryItem(AZ, title='Programma\'s A-Z', thumb=R(PLUGIN_ICON_DEFAULT))))
   dir.Append(Function(DirectoryItem(Channels, title='Zenders', thumb=R(PLUGIN_ICON_DEFAULT))))
@@ -139,7 +138,7 @@ def GetProgrammes(url, page=1, cacheTime=CACHE_1WEEK, episodes=False):
   EnsureSessionIsAlive()
   prog = []
 
-  programmes = XML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), encoding='iso-8859-1', isHTML=True, errors='ignore', cacheTime=cacheTime).xpath('/html/body//thead[@id="tooltip_selectie"]/parent::table//tr[@class]')
+  programmes = HTML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), encoding='iso-8859-1', errors='ignore', cacheTime=cacheTime).xpath('/html/body//thead[@id="tooltip_selectie"]/parent::table//tr[@class]')
   for p in programmes:
     if episodes == False:
       series_url = p.xpath('./td[2]//a')[0].get('href')
@@ -164,7 +163,7 @@ def GetProgrammes(url, page=1, cacheTime=CACHE_1WEEK, episodes=False):
         episode['rating'] = float(rating)*2 # NPO rating is 0-5, for Plex it's 0-10
       prog.append(episode)
 
-  pagination = XML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), isHTML=True, errors='ignore', cacheTime=cacheTime).xpath('/html/body//a[contains(text(),"volgende")]')
+  pagination = HTML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), errors='ignore', cacheTime=cacheTime).xpath('/html/body//a[contains(text(),"volgende")]')
   if len(pagination) > 0:
     prog.extend( GetProgrammes(url, page=page+1, cacheTime=cacheTime, episodes=episodes) )
 
@@ -252,7 +251,7 @@ def AZ(sender):
 def Channels(sender):
   dir = MediaContainer(viewGroup='_List', title2=sender.itemTitle)
 
-  channel = XML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', isHTML=True, errors='ignore').xpath('/html/body//div[@id="nav_net"]//a')
+  channel = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('/html/body//div[@id="nav_net"]//a')
   for c in channel:
     title = c.text.encode('iso-8859-1').decode('utf-8').strip()
     url = UZG_BASE_URL + c.get('href')
@@ -266,7 +265,7 @@ def Channels(sender):
 def Broadcasters(sender):
   dir = MediaContainer(viewGroup='_List', title2=sender.itemTitle)
 
-  broadcaster = XML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', isHTML=True, errors='ignore').xpath('/html/body//select[@id="omroep"]/option[@value!=""]')
+  broadcaster = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('/html/body//select[@id="omroep"]/option[@value!=""]')
   for b in broadcaster:
     title = b.text.encode('iso-8859-1').decode('utf-8').strip()
     id = int(b.get('value'))
@@ -281,7 +280,7 @@ def Broadcasters(sender):
 def Genres(sender):
   dir = MediaContainer(viewGroup='_List', title2=sender.itemTitle)
 
-  genre = XML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', isHTML=True, errors='ignore').xpath('/html/body//select[@id="genre"]/option[@value!=""]')
+  genre = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('/html/body//select[@id="genre"]/option[@value!=""]')
   for g in genre:
     title = g.text.encode('iso-8859-1').decode('utf-8').strip()
     id = int(g.get('value'))
@@ -294,13 +293,12 @@ def Genres(sender):
 ###################################################################################################
 
 def GetArchivedEpisodes(sender, series_id, more_archive=False, page=1):
+  dir = MediaContainer(viewGroup='_InfoList', title2=sender.itemTitle, noCache=True)
   EnsureSessionIsAlive()
-  dir = MediaContainer(viewGroup='_InfoList', title2=sender.itemTitle)
 
   if more_archive == False:
-    md5 = Hash.MD5(str(time.time()))
-    init = HTTP.Request(UZG_ARCHIVE % (int(series_id), md5), cacheTime=0)
-    programmes = XML.ElementFromURL(UZG_ARCHIVE % (int(series_id), md5), encoding='iso-8859-1', isHTML=True, errors='ignore').xpath('/html/body//tbody[@id="afleveringen"]/parent::table//tr[@class]')
+    get_and_forget = HTTP.Request(UZG_ARCHIVE % (int(series_id), GetMD5()), cacheTime=0).content # Let's grab this page twice so it works (yah, uhm... doesn't work otherwise, even after we did EnsureSessionIsAlive...)
+    programmes = HTML.ElementFromURL(UZG_ARCHIVE % (int(series_id), GetMD5()), encoding='iso-8859-1', errors='ignore', cacheTime=0).xpath('/html/body//tbody[@id="afleveringen"]/parent::table//tr[@class]')
     for p in programmes:
       episode_url = p.xpath('./td[last()]/a')[0].get('href')
       episode_id = re.search('aflID=([0-9]+)', episode_url).group(1)
@@ -348,17 +346,19 @@ def PlayVideo(sender, episode_id, h):
 
 def GetThumb(thumb, alt_thumb, mimetype='image/jpeg'):
   if thumb != None or alt_thumb != None:
-    image = HTTP.Request(thumb, cacheTime=CACHE_1MONTH)
-    if image:
+    try:
+      image = HTTP.Request(thumb, cacheTime=CACHE_1MONTH).content
       if thumb[-4:4] == '.png':
         mimetype = 'image/png'
       return DataObject(image, mimetype)
-    else:
-      image = HTTP.Request(alt_thumb, cacheTime=CACHE_1MONTH)
-      if image:
+    except:
+      try:
+        image = HTTP.Request(alt_thumb, cacheTime=CACHE_1MONTH).content
         if alt_thumb[-4:4] == '.png':
           mimetype = 'image/png'
         return DataObject(image, mimetype)
+      except:
+        pass
 
   return Redirect(R(PLUGIN_ICON_DEFAULT))
 
@@ -435,8 +435,13 @@ def GetIcon(id):
 
 ###################################################################################################
 
-def EnsureSessionIsAlive(lifetime=120):
+def GetMD5():
+  return Hash.MD5(str(time.time()))
+
+###################################################################################################
+
+def EnsureSessionIsAlive():
   # Visit the homepage and a random video page to have the necessary cookies/initiate a session/keep the current session alive.
   # If we don't do this, we cannot access any pages within the website and the XML files we need.
-  video_url = XML.ElementFromURL(UZG_BASE_URL, isHTML=True, errors='ignore', cacheTime=lifetime).xpath('/html/body//a[contains(@href,"' + (UZG_VIDEO_PAGE % '') + '")]')[0].get('href')
-  video_page = HTTP.Request(video_url, cacheTime=lifetime)
+  video_url = HTML.ElementFromURL(UZG_BASE_URL, errors='ignore', cacheTime=0).xpath('/html/body//a[contains(@href,"' + (UZG_VIDEO_PAGE % '') + '")]')[0].get('href')
+  video_page = HTTP.Request(video_url, cacheTime=0).content
