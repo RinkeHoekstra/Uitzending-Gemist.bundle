@@ -32,7 +32,7 @@ MONTH                      = ['', 'januari','februari','maart','april','mei','ju
 SILVERLIGHT_PLAYER         = 'http://www.plexapp.com/player/silverlight.php?stream=%s'
 
 # Default artwork and icon(s)
-PLUGIN_ARTWORK             = 'art-default.png'
+PLUGIN_ARTWORK             = 'art-default.jpg'
 PLUGIN_ICON_DEFAULT        = 'icon-default.png'
 PLUGIN_ICON_SEARCH         = 'icon-search.png'
 PLUGIN_ICON_PREFS          = 'icon-prefs.png'

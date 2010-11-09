@@ -24,10 +24,14 @@
 	<string>AlwaysOn</string>
 	<key>PlexPluginCodePolicy</key>
 	<string>Elevated</string>
+	<key>PlexMediaContainer</key>
+	<array>
+		<string>Silverlight</string>
+	</array>
 
-    <key>PlexPluginConsoleLogging</key>
-    <string>1</string>
-    <key>PlexPluginDevMode</key>
-    <string>1</string>
+	<key>PlexPluginConsoleLogging</key>
+	<string>0</string>
+	<key>PlexPluginDevMode</key>
+	<string>0</string>
 </dict>
 </plist>
