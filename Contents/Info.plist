@@ -17,21 +17,20 @@
 	<key>CFBundleVersion</key>
 	<string>1.0</string>
 	<key>PlexClientPlatforms</key>
-	<string>MacOSX</string>
+	<string>MacOSX,LGTV</string>
 	<key>PlexFrameworkVersion</key>
 	<string>2</string>
-	<key>PlexPluginMode</key>
-	<string>AlwaysOn</string>
-	<key>PlexPluginCodePolicy</key>
-	<string>Elevated</string>
 	<key>PlexMediaContainer</key>
 	<array>
 		<string>Silverlight</string>
 	</array>
-
+	<key>PlexPluginCodePolicy</key>
+	<string>Elevated</string>
 	<key>PlexPluginConsoleLogging</key>
 	<string>0</string>
 	<key>PlexPluginDevMode</key>
 	<string>0</string>
+	<key>PlexPluginMode</key>
+	<string>AlwaysOn</string>
 </dict>
 </plist>
