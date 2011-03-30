@@ -138,7 +138,7 @@ def GetProgrammes(url, page=1, cacheTime=CACHE_1WEEK, episodes=False):
   EnsureSessionIsAlive()
   prog = []
 
-  programmes = HTML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), encoding='iso-8859-1', errors='ignore', cacheTime=cacheTime).xpath('/html/body//thead[@id="tooltip_selectie"]/parent::table//tr[@class]')
+  programmes = HTML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), encoding='iso-8859-1', errors='ignore', cacheTime=cacheTime).xpath('//thead[@id="tooltip_selectie"]/parent::table//tr[@class]')
   for p in programmes:
     if episodes == False:
       series_url = p.xpath('./td[2]//a')[0].get('href')
@@ -163,7 +163,7 @@ def GetProgrammes(url, page=1, cacheTime=CACHE_1WEEK, episodes=False):
         episode['rating'] = float(rating)*2 # NPO rating is 0-5, for Plex it's 0-10
       prog.append(episode)
 
-  pagination = HTML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), errors='ignore', cacheTime=cacheTime).xpath('/html/body//a[contains(text(),"volgende")]')
+  pagination = HTML.ElementFromURL(''.join([url, '&', UZG_PAGINATION_URLS, str(page)]), errors='ignore', cacheTime=cacheTime).xpath('//a[contains(text(),"volgende")]')
   if len(pagination) > 0:
     prog.extend( GetProgrammes(url, page=page+1, cacheTime=cacheTime, episodes=episodes) )
 
@@ -251,7 +251,7 @@ def AZ(sender):
 def Channels(sender):
   dir = MediaContainer(viewGroup='_List', title2=sender.itemTitle)
 
-  channel = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('/html/body//div[@id="nav_net"]//a')
+  channel = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('//div[@id="nav_net"]//a')
   for c in channel:
     title = c.text.encode('iso-8859-1').decode('utf-8').strip()
     url = UZG_BASE_URL + c.get('href')
@@ -265,7 +265,7 @@ def Channels(sender):
 def Broadcasters(sender):
   dir = MediaContainer(viewGroup='_List', title2=sender.itemTitle)
 
-  broadcaster = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('/html/body//select[@id="omroep"]/option[@value!=""]')
+  broadcaster = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('//select[@id="omroep"]/option[@value!=""]')
   for b in broadcaster:
     title = b.text.encode('iso-8859-1').decode('utf-8').strip()
     id = int(b.get('value'))
@@ -280,7 +280,7 @@ def Broadcasters(sender):
 def Genres(sender):
   dir = MediaContainer(viewGroup='_List', title2=sender.itemTitle)
 
-  genre = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('/html/body//select[@id="genre"]/option[@value!=""]')
+  genre = HTML.ElementFromURL(UZG_BASE_URL, encoding='iso-8859-1', errors='ignore').xpath('//select[@id="genre"]/option[@value!=""]')
   for g in genre:
     title = g.text.encode('iso-8859-1').decode('utf-8').strip()
     id = int(g.get('value'))
@@ -298,7 +298,7 @@ def GetArchivedEpisodes(sender, series_id, more_archive=False, page=1):
 
   if more_archive == False:
     get_and_forget = HTTP.Request(UZG_ARCHIVE % (int(series_id), GetMD5()), cacheTime=0).content # Let's grab this page twice so it works (yah, uhm... doesn't work otherwise, even after we did EnsureSessionIsAlive...)
-    programmes = HTML.ElementFromURL(UZG_ARCHIVE % (int(series_id), GetMD5()), encoding='iso-8859-1', errors='ignore', cacheTime=0).xpath('/html/body//tbody[@id="afleveringen"]/parent::table//tr[@class]')
+    programmes = HTML.ElementFromURL(UZG_ARCHIVE % (int(series_id), GetMD5()), encoding='iso-8859-1', errors='ignore', cacheTime=0).xpath('//tbody[@id="afleveringen"]/parent::table//tr[@class]')
     for p in programmes:
       episode_url = p.xpath('./td[last()]/a')[0].get('href')
       episode_id = re.search('aflID=([0-9]+)', episode_url).group(1)
@@ -443,5 +443,5 @@ def GetMD5():
 def EnsureSessionIsAlive():
   # Visit the homepage and a random video page to have the necessary cookies/initiate a session/keep the current session alive.
   # If we don't do this, we cannot access any pages within the website and the XML files we need.
-  video_url = HTML.ElementFromURL(UZG_BASE_URL, errors='ignore', cacheTime=0).xpath('/html/body//a[contains(@href,"' + (UZG_VIDEO_PAGE % '') + '")]')[0].get('href')
+  video_url = HTML.ElementFromURL(UZG_BASE_URL, errors='ignore', cacheTime=0).xpath('//a[contains(@href,"' + (UZG_VIDEO_PAGE % '') + '")]')[0].get('href')
   video_page = HTTP.Request(video_url, cacheTime=0).content
