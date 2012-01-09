@@ -4,7 +4,7 @@ from string import ascii_uppercase
 
 ###################################################################################################
 PLUGIN_TITLE   = 'Uitzending Gemist'
-UZG_BASE_URL   = 'http://beta.uitzendinggemist.nl'
+UZG_BASE_URL   = 'http://www.uitzendinggemist.nl'
 EPISODE_URL    = '%s/afleveringen/%%s' % UZG_BASE_URL
 DATA_BASE_URL  = 'http://pi.omroep.nl'
 UZG_PAGINATION = 'page=%d'
@@ -62,7 +62,7 @@ def BrowseByDay(sender, url):
 
   for page in range (1, NumberOfPages(url) + 1):
     for ep in HTML.ElementFromURL(url + '?' + (UZG_PAGINATION % page)).xpath('//h3/a[contains(@href, "/afleveringen/")]'):
-      episode_id = re.search('/afleveringen/([0-9]{7})', ep.get('href')).group(1)
+      episode_id = re.search('/afleveringen/([0-9]+)', ep.get('href')).group(1)
       ids.append(episode_id)
 
   dir.Extend(Episodes(ids, is_recent_listing=True))
@@ -94,9 +94,8 @@ def Episodes(ids, is_recent_listing=False):
 
       @task
       def GetEpisode(num=num, result_dict=result_dict, episode_id=episode_id):
-        episode_link = HTML.ElementFromURL(EPISODE_URL % episode_id, cacheTime=CACHE_1MONTH).xpath('//meta[@property="og:url"]')[0].get('content')
-        real_episode_id = re.search('gemi\.st/([0-9]{8})', episode_link).group(1)
-        #Log(episode_id + " > " + real_episode_id)
+        episode_link = HTML.ElementFromURL(EPISODE_URL % episode_id, cacheTime=CACHE_1MONTH).xpath('//meta[@property="og:video"]')[0].get('content')
+        real_episode_id = re.search('episodeID=([0-9]+)', episode_link).group(1)
         metadata = XML.ElementFromURL(METADATA_URL % (real_episode_id, GetHash(real_episode_id)), cacheTime=CACHE_1MONTH)
 
         if metadata.xpath('/aflevering'):
