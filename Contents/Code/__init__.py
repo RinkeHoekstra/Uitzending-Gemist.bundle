@@ -38,9 +38,9 @@ def MainMenu():
   dir = MediaContainer(viewGroup='List')
   
   dir.Append(Function(DirectoryItem(Recent, title='Afgelopen 7 dagen')))
-  dir.Append(Function(DirectoryItem(Broadcaster, title='Omroepen')))
-  #  dir.Append(Function(DirectoryItem(Genre, title='Genres')))
-  #  dir.Append(Function(DirectoryItem(AtoZ, title='Programma\'s A-Z')))
+  dir.Append(Function(DirectoryItem(Broadcaster, title='Programma\'s per Omroep')))
+  dir.Append(Function(DirectoryItem(Genre, title='Programma\'s per Genre')))
+  dir.Append(Function(DirectoryItem(AtoZ, title='Programma\'s A-Z')))
   
   return dir
 
@@ -64,16 +64,50 @@ def Broadcaster(sender):
     title = bc.get('title')
     bcurl = UZG_BASE_URL + bc.get('href')
     Log.Debug(bcurl)
-    dir.Append(Function(DirectoryItem(BrowseByBC, title=title, thumb=R('icon-'+title.lower()+'.png')), url=bcurl))
+    dir.Append(Function(DirectoryItem(BrowseByCategory, title=title, thumb=R('icon-'+title.lower()+'.png')), url=bcurl, heading='h3'))
   
   return dir
 
-def BrowseByBC(sender, url):
+def Genre(sender):
+  dir = MediaContainer(title2=sender.itemTitle)
+  
+  gListURL = UZG_BASE_URL + '/genres'
+  
+  for genre in HTML.ElementFromURL(gListURL).xpath('//a[@class="genre"]') :
+    title = genre.get('title')
+    genreurl = UZG_BASE_URL + genre.get('href')
+    Log.Debug(genreurl)
+    dir.Append(Function(DirectoryItem(BrowseByCategory, title=title), url=genreurl, heading='h3'))
+  
+  return dir
+
+def AtoZ(sender):
+  dir = MediaContainer(title2=sender.itemTitle)
+  
+  alphabet = 'abcdefghijklmnopqrstuvwxyz'
+  numbers = '0-9'
+  
+  # First the letters
+  for letter in list(alphabet) :
+    title = letter.upper()
+    atozurl = UZG_BASE_URL + '/programmas/' + letter
+    Log.Debug(atozurl)
+    dir.Append(Function(DirectoryItem(BrowseByCategory, title=title), url=atozurl, heading='h2'))
+  
+  # Then the numbers
+  title = numbers
+  atozurl = UZG_BASE_URL + '/programmas/' + numbers
+  dir.Append(Function(DirectoryItem(BrowseByCategory, title=title), url=atozurl, heading='h2'))
+  
+  return dir
+
+
+def BrowseByCategory(sender, url, heading='h3'):
   dir = MediaContainer(title2=sender.itemTitle)
   
   
   for page in range (1, NumberOfPages(url) + 1):
-    for prog in HTML.ElementFromURL(url + '?' + (UZG_PAGINATION % page)).xpath('//h3/a[contains(@href, "/programmas/")]'):
+    for prog in HTML.ElementFromURL(url + '?' + (UZG_PAGINATION % page)).xpath('//'+heading+'/a[contains(@href, "/programmas/")]'):
       title = prog.get('title')
       progurl = UZG_BASE_URL + prog.get('href')
       Log.Debug(progurl)
